@@ -1324,13 +1324,8 @@ function render(timestamp) {
     }
 
     // Calculate fps
-    fps = 1/dt; 
     if( animFlag )
 
         //update every 2 seconds
-        if(((timestamp/1000)%2).toFixed(1) == 1){
-            document.getElementById('fps').innerHTML = fps.toFixed(2);
-        }
-
         window.requestAnimFrame(render);
 }
