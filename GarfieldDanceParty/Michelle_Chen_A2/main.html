@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+
+<script id="vertex-shader" type="x-shader/x-vertex">#version 300 es
+
+in vec4 vPosition;
+in vec3 vNormal;
+in vec4 vColor;
+in vec2 vTexCoord;
+
+
+uniform vec4 ambientProduct;
+uniform vec4 diffuseProduct;
+uniform vec4 specularProduct;
+uniform mat4 modelViewMatrix;
+uniform mat4 normalMatrix;
+uniform mat4 projectionMatrix;
+uniform vec4 lightPosition;
+uniform float shininess;
+uniform float Timer2;
+uniform float Timer3;
+
+out vec2 fTexCoord;
+out vec3 fPos ; // vertex position in eye coords
+out vec3 fLpos ; // light position in eye cords
+out vec3 fN ; // vertex normal in eye cords
+
+out vec4 lights;
+
+// Rainbow colour palette function
+vec3 palette(float t){
+    vec3 a = vec3(0.5, 0.5, 0.5);
+    vec3 b = vec3(0.5, 0.5, 0.5);
+    vec3 c = vec3(1.0, 1.0, 1.0);
+    vec3 d = vec3(0.00, 0.33, 0.67);
+
+    return a + b*cos( 6.28318*(c*t+d));
+}
+
+void
+main()
+{   
+    vec4 newPos = vPosition;
+
+    // make fur go boom when speakers drop
+    if (Timer2 > 9.6){
+        newPos.y += cos(newPos.x*20.)*0.2*sin(Timer2*4.);
+        newPos.x += sin(newPos.y*20.)*0.2*sin(Timer2*4.);
+    }
+    // Transform vertex position into eye coordinates
+    fPos = (modelViewMatrix * vPosition).xyz;
+
+    //transform normal in eye coordinates
+    fN = normalize( (normalMatrix*vec4(vNormal,0.0)).xyz);
+    // pass through light position
+    fLpos = lightPosition.xyz ;
+
+    // Transform vertex position in clip coordinates
+
+    gl_Position = projectionMatrix * modelViewMatrix * newPos;
+    
+	fTexCoord = vTexCoord;
+
+    // Set up rainbow colours to change based on time
+    vec2 uv = vec2(fTexCoord.x/2.0, fTexCoord.y/2.0)*2.0-0.5;
+    float l = length(uv);
+    vec3 col = palette(l + Timer2);
+    lights =  vec4(col,1.0);
+    lights.a = 1.0;
+
+
+    }
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">#version 300 es
+
+precision mediump float;
+
+uniform vec4 ambientProduct;
+uniform vec4 diffuseProduct;
+uniform vec4 specularProduct;
+uniform vec4 lightAmbient;
+uniform vec4 lightDiffuse;
+uniform float shininess;
+uniform vec4 color;
+
+uniform sampler2D texture1;
+uniform sampler2D texture2;
+uniform sampler2D checkered;
+
+uniform int blendTextures;
+uniform float bouncyBallVelocity;
+uniform float Timer;
+
+in vec4 lights;
+in vec2 fTexCoord;
+in vec3 fPos ;
+in vec3 fLpos ;
+in vec3 fN ;
+
+
+layout(location=0) out vec4 fragColor ;
+
+
+// ads function
+vec4 ads(vec3 pos, vec3 lpos, vec3 N) {
+    vec3 L = normalize(lpos - pos) ;
+    vec3 V = normalize(-pos) ; // why?
+    vec3 R = reflect(-L, N) ;
+    vec3 HD = normalize(L+V);
+
+    // Compute terms in the illumination equation
+    float lightDotNormal = max( dot(L, N), 0.0 );
+    vec4 diffuse = vec4(0.0, 0.0, 0.0, 1.0);
+    diffuse = diffuseProduct * lightDotNormal;
+   
+    float reflectedDotViewShiny = pow( max(dot(R, V), 0.0), shininess );
+    vec4 specular = vec4(0.0, 0.0, 0.0, 1.0);
+    specular = specularProduct * reflectedDotViewShiny;
+
+    //blinn-phong
+    float HdDotV = pow(max(0.0, dot(HD,N)), shininess);
+    vec4 specular2 = specularProduct * HdDotV;
+   
+    if( dot(L, N) < 0.0 ) {
+    specular = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+
+    vec4 color = ambientProduct + diffuse + specular2;
+    color.a = 1.0 ;
+    return color ;
+}
+
+// diffuse and specular function
+vec4 ds(vec3 pos, vec3 lpos, vec3 N) {
+    vec3 L = normalize(lpos - pos) ;
+    vec3 V = normalize(-pos) ; // why?
+    vec3 R = reflect(-L, N) ;
+    vec3 HD = normalize(L+V);
+
+    // Compute terms in the illumination equation
+    float lightDotNormal = max( dot(L, N), 0.0 );
+    vec4 diffuse = vec4(0.0, 0.0, 0.0, 1.0) * lightDotNormal;
+   
+    float reflectedDotViewShiny = pow( max(dot(R, V), 0.0), shininess );
+    vec4 specular = vec4(0.0, 0.0, 0.0, 1.0);
+    specular = specularProduct * reflectedDotViewShiny;
+
+    float HdDotV = pow(max(0.0, dot(HD,N)),shininess);
+    vec4 specular2 = specularProduct * HdDotV;
+   
+    if( dot(L, N) < 0.0 ) {
+    specular = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+    vec4 color = diffuse + specular2;
+    color.a = 1.0 ;
+    return color ;
+}
+
+// cartoon lighting function / custom shader2
+vec4 banded(vec3 pos, vec3 lpos, vec3 N) {
+    vec3 L = normalize(lpos - pos) ;
+    vec3 V = normalize(-pos) ; // why?
+    vec3 R = reflect(-L, N) ;
+    vec3 HD = normalize(L+V);
+
+    // Compute terms in the illumination equation
+    float lightDotNormal = max( dot(L, N), 0.0 );
+    vec4 diffuse = vec4(0.0, 0.0, 0.0, 1.0) * lightDotNormal;
+
+    //variables to control brightness and steps
+    float mul = 10.0;
+    float div = 10.0;
+
+    //Take the floor of the shadow to create a steping/cartoon effect
+    float lightBandsMultiplier = float(mul/div);
+    float lightBandsAdditive = float(mul/2.0);
+    float LdotN = floor((lightDotNormal*1.7*div+lightBandsAdditive)/mul)*lightBandsMultiplier;
+   
+
+    float reflectedDotViewShiny = pow( max(dot(R, V), 0.0), shininess );
+    vec4 specular = vec4(0.0, 0.0, 0.0, 1.0);
+    specular = specularProduct * reflectedDotViewShiny;
+
+    float HdDotV = pow(max(0.0, dot(HD,N)),shininess);
+    vec4 specular2 = specularProduct * HdDotV;
+   
+    if( dot(L, N) < 0.0 ) {
+    specular = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+
+    vec4 color =   LdotN + diffuse + specular2;
+    color.a = 1.0 ;
+    return color ;
+}
+
+
+// Rainbow Lights with shadow effect
+vec4 light(vec3 pos, vec3 lpos, vec3 N) {
+    vec3 L = normalize(lpos - pos) ;
+    vec3 V = normalize(-pos) ; 
+    vec3 R = reflect(-L, N) ;
+    vec3 HD = normalize(L+V);
+
+
+    float reflectedDotViewShiny = pow( max(dot(R, V), 0.0), shininess );
+    vec4 specular = vec4(0.0, 0.0, 0.0, 1.0);
+    specular = specularProduct * reflectedDotViewShiny;
+
+    float HdDotV = pow(max(0.0, dot(HD,N)),shininess);
+    vec4 specular2 = specularProduct * HdDotV;
+   
+    if( dot(L, N) < 0.0 ) {
+    specular = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+
+    vec4 l = lights * banded(pos, lpos, N) + specular2;
+    l.a = 1.0;
+    return l;
+}
+
+
+// same palette function but for discofloor
+vec3 palette(float t){
+    vec3 a = vec3(0.5, 0.5, 0.5);
+    vec3 b = vec3(0.5, 0.5, 0.5);
+    vec3 c = vec3(1.0, 1.0, 1.0);
+    vec3 d = vec3(0.00, 0.33, 0.67);
+
+    return a + b*cos( 6.28318*(c*t+d));
+}
+
+void
+main()
+{
+
+    //walls of room before rainbowlights
+	if( blendTextures == 1)
+    {
+
+		vec4 alphaTextureColor = texture( texture2, fTexCoord );
+        vec4 text1 = mix(texture( texture1, fTexCoord ), (alphaTextureColor), alphaTextureColor.a);
+		fragColor = mix(text1, ds(fPos,fLpos,fN),0.5) + ads(fPos,fLpos,fN);
+		//fragColor = mix(texture( texture1, fTexCoord ), texture( texture2, fTexCoord ), 0.5);
+	}
+
+    else if (blendTextures == 2){
+        fragColor = mix(texture( texture1, fTexCoord), ds(fPos,fLpos,fN),0.5) + ads(fPos,fLpos,fN);
+    }
+
+     //disco floor before lights
+    else if (blendTextures == 3){
+        fragColor = mix(texture( checkered, fTexCoord), ds(fPos,fLpos,fN), 0.3);
+    }
+    
+	
+    // Disco floor after lights / custom shader2
+    else if (blendTextures == 4)
+	{   
+        // get coordinates of disco floor fractions
+        vec2 uv = vec2(fTexCoord.x/2.0, fTexCoord.y/2.0)*2.0-0.5;
+        uv = fract(uv*5.0)-0.5;
+
+        //aura glow
+        float l = length(uv);
+
+        //change colour based on time
+        vec3 col = palette(l +Timer);
+
+        //display checkered tile
+        vec4 text1 = mix(texture(checkered, fTexCoord ), vec4(col,1.0),.5);
+        fragColor =  text1;
+    }
+
+
+    // Cartoon rainbow lights
+    else if (blendTextures == 5)
+	{   
+
+        fragColor = color * light(fPos,fLpos,fN) * banded(fPos,fLpos,fN);
+    }
+
+    // rainbow walls using texture overlays
+    else if (blendTextures == 6)
+	{   
+        vec4 alphaTextureColor = texture( texture2, fTexCoord );
+        vec4 text1 = mix (texture(texture1, fTexCoord), alphaTextureColor, alphaTextureColor.a);
+        vec4 text2 = mix(text1,banded(fPos,fLpos,fN),0.2);
+        vec4 text3 = mix(text2,light(fPos,fLpos,fN),0.5);
+        fragColor = text3 * ads(fPos,fLpos,fN);
+    }
+
+
+    // cartoon lighting for garfield
+    else if (blendTextures == 7){
+        fragColor = color * banded(fPos,fLpos,fN);
+    }
+
+    //default lighting
+    else{
+        fragColor = ads(fPos,fLpos,fN);
+    }
+
+
+}
+</script>
+
+<script type="text/javascript" src="Common/webgl-utils.js"></script>
+<script type="text/javascript" src="Common/initShaders.js"></script>
+
+<script type="text/javascript" src="Common/MV.js"></script>
+<script type="text/javascript" src="objects.js"></script>
+<script type="text/javascript" src="main.js"></script>
+
+
+<body>
+<canvas id="gl-canvas" width="512" height="512">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+
+<br/>
+<br/>
+
+
+</body>
+</html>
