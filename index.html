@@ -32,17 +32,12 @@
   <body>
     <!-- Navbar -->
     <nav>
-        <h1>Michelle Chen</h1>
-        <ul class="navigation">
-          <li><a href="#about" class="nav-link">About</a></li>
-          <li><a href="#skills" class="nav-link">Skills</a></li>
-          <li><a href="#projects" class="nav-link">Projects</a></li>
-          <li><a href="#contact" class="nav-link">Contact</a></li>
-        </ul>
-        <button class="burger-menu" id="burger-menu">
-          <ion-icon class="bars" name="menu-outline"></ion-icon>
-        </button>
-  </nav>
+      <div class="menu">
+        <p>Cool Site</p>
+        <button>Sign up</button>
+      </div>
+      <div class="backdrop"></div>
+    </nav>
 
     <!-- Hero Section -->
     <section class="hero" id="about">
@@ -63,24 +58,7 @@
   </section>
 
     <!-- More about -->
-    <section class="more-about">
-        <h2>More About Me</h2>
-        <p>
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Reiciendis
-          nesciunt excepturi quos obcaecati incidunt voluptatem ipsam sunt ipsum,
-          autem deleniti cupiditate molestias quis unde quae totam porro dicta
-          iure animi inventore, veniam hic! Omnis nulla, delectus a voluptatibus
-        </p>
-        <p>
-          Lorem ipsum dolor sit amet consectetur, adipisicing elit. Consequuntur
-          nostrum dolor minus, libero delectus praesentium perferendis
-        </p>
-        <p>
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Vero,
-          consequuntur labore? Ea totam voluptas amet!
-        </p>
-      </section>
-
+  
     <!-- Skills section -->
 
     <!-- Projects section -->
@@ -92,6 +70,9 @@
     <!-- Scroll to top -->
      
     <!-- Footer section -->
+
+    <!-- Cursor -->
+    <div class="cursor-circle"></div>
 
     <!-- Website scripts -->
     <script src="assets/js/app.js"></script>
@@ -105,5 +86,14 @@
       nomodule
       src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"
     ></script>
+
+    <script src="assets/script.js"></script>
   </body>
+
+  <svg>
+    <filter id="grainy">
+      <feTurbulence type="turbulence" baseFrequency="0.85" />
+    </filter>
+  </svg>
+
 </html>

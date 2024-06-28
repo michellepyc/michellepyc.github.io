@@ -2,13 +2,13 @@
 
   /* Variables */
   :root {
-    --font-family: "Roboto", sans-serf;
+    --font-family: "Roboto";
     --normal-font: 400;
     --bold-font: 700;
     --bolder-font: 900;
-    --bg-color: #fcfcfc;
-    --primary-color: #47927f;
-    --secondary-color: #ff7235;
+    --bg-color:#FCFCFC;
+    --primary-color: #B6ACAC;
+    --secondary-color: #83948F;
     --primary-shadow: #abc4af;
     --secondary-shadow: #a17a69;
     --bottom-margin: 0.5rem;
@@ -28,67 +28,81 @@
     padding: 0;
     box-sizing: border-box;
   }
-  
-  ul {
-    list-style-type: none;
-  }
-  
-  a {
-    text-decoration: none;
-    color: var(--primary-color);
-  }
-  
-  a:hover {
-    color: var(--secondary-color);
+
+
+  button {
+    border-radius: 5rem;
+    padding: 1rem 2rem;
+    border: 1px solid var(--primary-shadow);
+    background-color: transparent;
+    font-family: var(--font-family);
+    color: #000;
+    transition: all 0.1s ease;
+    cursor: pointer;
   }
   
   body {
     font-family: var(--font-family);
+    margin: 0;
+    padding: 0;
+    position: relative;
+    background: var(--bg-color); /* Your base background color */
+    /*   cursor: none; */
+  }
+
+  body::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    filter: url(#grainy);
+    opacity: 0.6; /* Adjust the opacity as needed */
+    pointer-events: none; /* Ensure it doesn’t interfere with other elements */
+    z-index: 5;
   }
 
   nav {
-    position: sticky;
+    position: fixed;
     top: 0;
-    left: 0;
-    z-index: 1;
+    width: 100%;
+    height: 6rem;
     display: flex;
-    align-items: center;
+    padding: 0 2rem;
+    box-sizing: border-box;
+    z-index: 6;
+  }
+  
+  .menu {
+    position: relative;
+    display: flex;
+    flex-direction: row;
     justify-content: space-between;
-    padding: 1.5rem 3.5rem;
-    background-color: var(--bg-color);
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
-  }
-
-  nav h1 {
-    color: var(--primary-color);
+    align-items: center;
+    width: 100%;
+    gap: 2rem;
+    font-size: var(--font-family);
+    z-index: 1;
   }
   
-  nav a {
-    color: var(--primary-color);
-    transition: var(--transition);
-  }
-  nav a:hover {
-    color: var(--secondary-color);
-    border-bottom: 2px solid var(--secondary-color);
-  }
+  .backdrop {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    
+  /*  where the real magic happens  */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   
-  nav ul {
-    display: flex;
-    gap: 1.9rem;
-  }
+  background: rgba(225, 225, 225, 0.05);
   
-  nav ul li {
-    font-weight: var(--bold-font);
-  }
-
-  .burger-menu {
-    color: var(--primary-color);
-    font-size: 2rem;
-    border: 0;
-    background-color: transparent;
-    cursor: pointer;
-    display: none;
-  }
+  mask-image: linear-gradient(rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0.8) 70%, rgba(0, 0, 0, 0) 100%);
+  
+  -webkit-mask-image: linear-gradient(rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0.8) 70%, rgba(0, 0, 0, 0) 100%);
+  inset: -1rem 0;
+}
 
   .hero {
     display: flex;
@@ -97,18 +111,31 @@
     gap: 2.5rem;
     max-width: 68.75rem;
     margin: auto;
+    z-index: 3;
   }
   
   .hero img {
     height: 27.5rem;
     width: 27.5rem;
+    z-index: 1;
   }
 
   .bio {
     width: 28rem;
     padding: 0.625rem;
     border-radius: 6px;
-    box-shadow: 0px 2px 15px 2px var(--primary-shadow);
+    z-index: 6; /* Make sure content is above the pseudo-element */
+    text-align: center;
+    padding: 50px;
+    background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(255, 255, 255, 0));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   }
   
   .bio h1 {
@@ -133,4 +160,39 @@
   .more-about p {
     line-height: var(--line-height);
     padding: 0.4rem;
+  }
+
+  .cursor-circle {
+    position: fixed; /* Position it fixed relative to the viewport */
+    width: 80px; /* Adjust the size of the circle */
+    height: 80px;
+    background: rgba(0, 0, 0, 0); /* Circle color */
+    border-radius: 50%; /* Make it a circle */
+    pointer-events: none; /* Ensure it doesn't capture mouse events */
+    transform: translate(-50%, -50%); /* Center the circle on the cursor */
+    z-index: 0; /* Ensure it is on top of other elements */
+    transition: width 1.5s ease, height 1.5s ease, filter 1.5s ease;
+    filter: blur(60px);
+  }
+  
+  @keyframes colorChange {
+    0% {
+      background-color: rgba(255, 0, 0, 1); /* Red */
+    }
+    25% {
+      background-color: rgba(0, 255, 0, 1); /* Green */
+    }
+    50% {
+      background-color: rgba(0, 0, 255, 1); /* Blue */
+    }
+    75% {
+      background-color: rgba(255, 255, 0, 1); /* Yellow */
+    }
+    100% {
+      background-color: rgba(255, 0, 0, 1); /* Red */
+    }
+  }
+  
+  .moving {
+    animation: colorChange 20s infinite; /* Apply the color change animation */
   }
