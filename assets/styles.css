@@ -20,6 +20,8 @@
   
   html {
     scroll-behavior: smooth;
+    height: 100%;
+    width: 100%;
   }
   
   /* CSS Resets */
@@ -44,11 +46,13 @@
   body {
     font-family: var(--font-family);
     height: 100%;
+    width: 100%;
     margin: 0;
     padding: 0;
     position: relative;
     background: var(--bg-color); /* Your base background color */
     /*   cursor: none; */
+    overflow: hidden; /* Ensure no scrollbar */
   }
 
   body::before {
